@@ -332,3 +332,48 @@ def generar_reportes():
         nombre = p["nombre"] if p else "Desconocido"
         print(f"   - {nombre} ({codigo}): {cant} unidades")
 
+def menu():
+    while True:
+        print("\n==================== AGROCONTROL CBA ====================")
+        print("1. Registrar producto")
+        print("2. Consultar/Listar productos")
+        print("3. Desactivar producto")
+        print("4. Registrar lote productivo")
+        print("5. Cosechar lote")
+        print("6. Movimiento manual de inventario")
+        print("7. Registrar venta")
+        print("8. Alertas de stock mínimo")
+        print("9. Reportes del sistema")
+        print("0. Salir")
+        print("=========================================================")
+        
+        opcion = input("Seleccione una opción: ").strip()
+        try:
+            if opcion == "1":
+                registrar_producto()
+            elif opcion == "2":
+                listar_productos()
+            elif opcion == "3":
+                desactivar_producto()
+            elif opcion == "4":
+                registrar_lote()
+            elif opcion == "5":
+                cosechar_lote()
+            elif opcion == "6":
+                registrar_movimiento_manual()
+            elif opcion == "7":
+                registrar_venta()
+            elif opcion == "8":
+                alertas_stock()
+            elif opcion == "9":
+                generar_reportes()
+            elif opcion == "0":
+                print("Saliendo de AgroControl CBA...")
+                break
+            else:
+                print("Opción no válida.")
+        except Exception as e:
+            print(f"Error inesperado: {e}")
+
+if __name__ == "__main__":
+    menu()
