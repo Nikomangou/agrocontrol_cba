@@ -1,24 +1,53 @@
+import csv
 import json
 import os
+import shutil
 from datetime import datetime
 
 DATA_DIR = "data"
+BACKUP_DIR = os.path.join(DATA_DIR, "backups")
 ARCHIVOS = {
     "productos": os.path.join(DATA_DIR, "productos.json"),
     "lotes": os.path.join(DATA_DIR, "lotes.json"),
     "movimientos": os.path.join(DATA_DIR, "movimientos.json"),
-    "ventas": os.path.join(DATA_DIR, "ventas.json")
+    "ventas": os.path.join(DATA_DIR, "ventas.json"),
+    "usuarios": os.path.join(DATA_DIR, "usuarios.json")
 }
 
+USUARIO_ACTUAL = None
+
+# ---------------------------------------------------------
+# PERSISTENCIA & RESPALDOS
+# ---------------------------------------------------------
 def inicializar_almacenamiento():
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
+    if not os.path.exists(BACKUP_DIR):
+        os.makedirs(BACKUP_DIR)
+        
     for ruta in ARCHIVOS.values():
         if not os.path.exists(ruta):
             with open(ruta, "w", encoding="utf-8") as f:
                 json.dump([], f, ensure_ascii=False, indent=4)
 
-def cargar_datos(llave):
+    # Crear usuarios por defecto si no existen
+    usuarios = cargar_datos("usuarios", crear_backup_previo=False)
+    if not usuarios:
+        default_users = [
+            {"usuario": "admin", "clave": "admin123", "rol": "ADMINISTRADOR"},
+            {"usuario": "operador", "clave": "operador123", "rol": "OPERADOR"}
+        ]
+        guardar_datos("usuarios", default_users, realizar_backup=False)
+
+def crear_copia_seguridad():
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    for llave, ruta in ARCHIVOS.items():
+        if os.path.exists(ruta) and llave != "usuarios":
+            nombre_archivo = os.path.basename(ruta)
+            respaldo_path = os.path.join(BACKUP_DIR, f"{timestamp}_{nombre_archivo}")
+            shutil.copy(ruta, respaldo_path)
+
+def cargar_datos(llave, crear_backup_previo=False):
     inicializar_almacenamiento()
     try:
         with open(ARCHIVOS[llave], "r", encoding="utf-8") as f:
@@ -26,10 +55,42 @@ def cargar_datos(llave):
     except (json.JSONDecodeError, FileNotFoundError):
         return []
 
-def guardar_datos(llave, datos):
+def guardar_datos(llave, datos, realizar_backup=True):
+    if realizar_backup and llave != "usuarios":
+        crear_copia_seguridad()
     with open(ARCHIVOS[llave], "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=4)
 
+# ---------------------------------------------------------
+# AUTENTICACIÓN
+# ---------------------------------------------------------
+def iniciar_sesion():
+    global USUARIO_ACTUAL
+    print("\n==================== INICIO DE SESIÓN ====================")
+    usuarios = cargar_datos("usuarios", crear_backup_previo=False)
+    intentos = 0
+    while intentos < 3:
+        usr = input("Usuario: ").strip()
+        pwd = input("Contraseña: ").strip()
+        user_match = next((u for u in usuarios if u["usuario"] == usr and u["clave"] == pwd), None)
+        if user_match:
+            USUARIO_ACTUAL = user_match
+            print(f"✓ Sesión iniciada como '{usr}' | Rol: [{USUARIO_ACTUAL['rol']}]")
+            return True
+        else:
+            intentos += 1
+            print(f"Credenciales incorrectas. Intentos restantes: {3 - intentos}")
+    return False
+
+def verificar_permisos(roles_permitidos):
+    if USUARIO_ACTUAL and USUARIO_ACTUAL["rol"] in roles_permitidos:
+        return True
+    print(f"Error de acceso: Esta función requiere rol {', '.join(roles_permitidos)}.")
+    return False
+
+# ---------------------------------------------------------
+# FUNCIONES PRINCIPALES
+# ---------------------------------------------------------
 def registrar_producto():
     print("\n--- REGISTRAR PRODUCTO ---")
     codigo = input("Código del producto: ").strip().upper()
@@ -47,10 +108,11 @@ def registrar_producto():
     unidad = input("Unidad de medida (ej. kilo, unidad): ").strip()
     
     try:
-        precio = float(input("Precio ($): "))
+        costo = float(input("Costo unitario ($): "))
+        precio = float(input("Precio de venta ($): "))
         stock_minimo = int(input("Stock mínimo: "))
-        if precio <= 0 or stock_minimo < 0:
-            print("Error (PF002): El precio debe ser mayor a 0 y el stock mínimo >= 0.")
+        if costo <= 0 or precio <= 0 or stock_minimo < 0:
+            print("Error (PF002): El costo y precio deben ser mayores a 0 y el stock mínimo >= 0.")
             return
     except ValueError:
         print("Error (PF002): Ingrese valores numéricos válidos.")
@@ -61,6 +123,7 @@ def registrar_producto():
         "nombre": nombre,
         "categoria": categoria,
         "unidad": unidad,
+        "costo": costo,
         "precio": precio,
         "stock_minimo": stock_minimo,
         "activo": True
@@ -78,7 +141,8 @@ def listar_productos():
     for p in productos:
         if filtro in p["codigo"] or filtro in p["nombre"].upper():
             estado = "Activo" if p["activo"] else "Inactivo"
-            print(f"[{p['codigo']}] {p['nombre']} | Cat: {p['categoria']} | Precio: ${p['precio']} | Stock Min: {p['stock_minimo']} | Estado: {estado}")
+            costo = p.get("costo", 0.0)
+            print(f"[{p['codigo']}] {p['nombre']} | Cat: {p['categoria']} | Costo: ${costo:,.2f} | Precio: ${p['precio']:,.2f} | Stock Min: {p['stock_minimo']} | Estado: {estado}")
             encontrados = True
     
     if not encontrados:
@@ -111,7 +175,7 @@ def registrar_lote():
         print("Error: El producto no existe o está inactivo.")
         return
 
-    fecha_siembra = input("Fecha de siembra (AAAA-MM-DD): ").strip()
+    fecha_siembra = input("Fecha de siembra (AAAA-MM-DD): ").strip() or datetime.now().strftime("%Y-%m-%d")
     try:
         area_m2 = float(input("Área en m2: "))
     except ValueError:
@@ -250,7 +314,8 @@ def registrar_venta():
             if cant <= 0:
                 print("La cantidad debe ser mayor a 0.")
                 continue
-            if cant > stock_disp:
+            cant_acumulada = sum(item["cantidad"] for item in items_venta if item["codigo"] == codigo)
+            if (cant + cant_acumulada) > stock_disp:
                 print("Error: No hay suficiente stock para cubrir esta cantidad.")
                 continue
         except ValueError:
@@ -260,6 +325,7 @@ def registrar_venta():
         items_venta.append({
             "codigo": codigo,
             "cantidad": cant,
+            "costo_unitario": prod.get("costo", 0.0),
             "precio_unitario": prod["precio"]
         })
 
@@ -270,6 +336,7 @@ def registrar_venta():
     ventas = cargar_datos("ventas")
     id_venta = f"V{len(ventas)+1:04d}"
     total_venta = sum(item["cantidad"] * item["precio_unitario"] for item in items_venta)
+    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     movimientos = cargar_datos("movimientos")
     for item in items_venta:
@@ -280,19 +347,118 @@ def registrar_venta():
             "tipo": "SALIDA",
             "cantidad": item["cantidad"],
             "motivo": f"Venta {id_venta}",
-            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")
+            "fecha": fecha_actual
         })
 
     ventas.append({
         "id": id_venta,
-        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "fecha": fecha_actual,
+        "estado": "COMPLETADA",
         "items": items_venta,
         "total": total_venta
     })
 
     guardar_datos("movimientos", movimientos)
     guardar_datos("ventas", ventas)
-    print(f"Venta {id_venta} registrada con éxito. Total: ${total_venta}")
+    print(f"Venta {id_venta} registrada con éxito. Total: ${total_venta:,.2f}")
+
+def consultar_ventas_rango():
+    print("\n--- CONSULTAR VENTAS POR RANGO DE FECHAS ---")
+    f_inicio = input("Fecha inicio (AAAA-MM-DD): ").strip()
+    f_fin = input("Fecha fin (AAAA-MM-DD): ").strip()
+    ventas = cargar_datos("ventas")
+
+    ventas_filtradas = [
+        v for v in ventas 
+        if f_inicio <= v["fecha"].split(" ")[0] <= f_fin
+    ]
+
+    if not ventas_filtradas:
+        print("No se encontraron ventas dentro del rango especificado.")
+        return
+
+    for v in ventas_filtradas:
+        est = v.get("estado", "COMPLETADA")
+        print(f"\nVenta ID: {v['id']} | Fecha: {v['fecha']} | Estado: [{est}] | Total: ${v['total']:,.2f}")
+        for item in v["items"]:
+            subt = item["cantidad"] * item["precio_unitario"]
+            print(f"   - Prod: {item['codigo']} | Cant: {item['cantidad']} | P.U: ${item['precio_unitario']} | Subtotal: ${subt:,.2f}")
+
+def devolver_venta():
+    print("\n--- DEVOLUCIÓN DE VENTA ---")
+    if not verificar_permisos(["ADMINISTRADOR", "INSTRUCTOR"]):
+        return
+
+    id_venta = input("Ingrese el ID de la venta a devolver (ej. V0001): ").strip().upper()
+    ventas = cargar_datos("ventas")
+    venta = next((v for v in ventas if v["id"] == id_venta), None)
+
+    if not venta:
+        print("Error: Venta no encontrada.")
+        return
+    if venta.get("estado") == "DEVUELTA":
+        print("Error: Esta venta ya fue devuelta anteriormente.")
+        return
+
+    movimientos = cargar_datos("movimientos")
+    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    for item in venta["items"]:
+        id_mov = f"M{len(movimientos)+1:04d}"
+        movimientos.append({
+            "id": id_mov,
+            "producto_codigo": item["codigo"],
+            "tipo": "ENTRADA",
+            "cantidad": item["cantidad"],
+            "motivo": f"Devolución Venta {id_venta}",
+            "fecha": fecha_actual
+        })
+
+    venta["estado"] = "DEVUELTA"
+    guardar_datos("movimientos", movimientos)
+    guardar_datos("ventas", ventas)
+    print(f"✓ Venta {id_venta} devuelta con éxito. Se reintegraron los productos al inventario.")
+
+def exportar_inventario_csv():
+    print("\n--- EXPORTAR INVENTARIO A CSV ---")
+    productos = cargar_datos("productos")
+    nombre_archivo = "reporte_inventario.csv"
+
+    with open(nombre_archivo, mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Codigo", "Nombre", "Categoria", "Unidad", "Costo", "Precio", "Stock_Actual", "Valor_Inventario_Venta"])
+        
+        for p in productos:
+            if p["activo"]:
+                stock = calcular_stock(p["codigo"])
+                costo = p.get("costo", 0.0)
+                writer.writerow([p["codigo"], p["nombre"], p["categoria"], p["unidad"], costo, p["precio"], stock, stock * p["precio"]])
+
+    print(f"✓ Inventario exportado correctamente en '{nombre_archivo}'.")
+
+def reporte_utilidad_estimada():
+    print("\n--- REPORTE DE UTILIDAD ESTIMADA ---")
+    if not verificar_permisos(["ADMINISTRADOR", "INSTRUCTOR"]):
+        return
+
+    ventas = cargar_datos("ventas")
+    ingresos_totales = 0.0
+    costos_totales = 0.0
+
+    for v in ventas:
+        if v.get("estado") != "DEVUELTA":
+            for item in v["items"]:
+                cant = item["cantidad"]
+                precio = item["precio_unitario"]
+                costo = item.get("costo_unitario", 0.0)
+                ingresos_totales += cant * precio
+                costos_totales += cant * costo
+
+    utilidad_bruta = ingresos_totales - costos_totales
+    print(f"Ingresos Totales por Ventas: ${ingresos_totales:,.2f}")
+    print(f"Costo Total de Productos:    ${costos_totales:,.2f}")
+    print("---------------------------------------------")
+    print(f"Utilidad Estimada Bruta:     ${utilidad_bruta:,.2f}")
 
 def alertas_stock():
     print("\n--- ALERTAS DE STOCK MÍNIMO ---")
@@ -307,6 +473,28 @@ def alertas_stock():
     if not alertas:
         print("Todos los productos activos superan el stock mínimo.")
 
+def reporte_rotacion_productos():
+    print("\n--- REPORTE DE ROTACIÓN DE PRODUCTOS ---")
+    ventas = cargar_datos("ventas")
+    productos = cargar_datos("productos")
+    
+    rotacion = {}
+    for v in ventas:
+        if v.get("estado") != "DEVUELTA":
+            for item in v["items"]:
+                code = item["codigo"]
+                rotacion[code] = rotacion.get(code, 0) + item["cantidad"]
+            
+    if not rotacion:
+        print("No hay ventas registradas para calcular rotación.")
+        return
+
+    print("Unidades vendidas por producto:")
+    for code, cant in sorted(rotacion.items(), key=lambda x: x[1], reverse=True):
+        p = next((prod for prod in productos if prod["codigo"] == code), None)
+        nombre = p["nombre"] if p else "Desconocido"
+        print(f"- {nombre} ({code}): {cant} unidades")
+
 def generar_reportes():
     print("\n--- REPORTES DEL SISTEMA ---")
     productos = cargar_datos("productos")
@@ -315,12 +503,13 @@ def generar_reportes():
     valor_total_inv = sum(calcular_stock(p["codigo"]) * p["precio"] for p in productos if p["activo"])
     print(f"1. Valor total del inventario (precio de venta): ${valor_total_inv:,.2f}")
 
-    total_ingresos = sum(v["total"] for v in ventas)
-    unidades_vendidas = sum(item["cantidad"] for v in ventas for item in v["items"])
-    print(f"2. Total Ventas: {len(ventas)} | Unidades Vendidas: {unidades_vendidas} | Ingresos Acumulados: ${total_ingresos:,.2f}")
+    ventas_validas = [v for v in ventas if v.get("estado") != "DEVUELTA"]
+    total_ingresos = sum(v["total"] for v in ventas_validas)
+    unidades_vendidas = sum(item["cantidad"] for v in ventas_validas for item in v["items"])
+    print(f"2. Total Ventas: {len(ventas_validas)} | Unidades Vendidas: {unidades_vendidas} | Ingresos Acumulados: ${total_ingresos:,.2f}")
 
     conteo_productos = {}
-    for v in ventas:
+    for v in ventas_validas:
         for item in v["items"]:
             c = item["codigo"]
             conteo_productos[c] = conteo_productos.get(c, 0) + item["cantidad"]
@@ -333,8 +522,13 @@ def generar_reportes():
         print(f"   - {nombre} ({codigo}): {cant} unidades")
 
 def menu():
+    inicializar_almacenamiento()
+    if not iniciar_sesion():
+        print("Acceso denegado. Cerrando AgroControl CBA...")
+        return
+
     while True:
-        print("\n==================== AGROCONTROL CBA ====================")
+        print(f"\n==================== AGROCONTROL CBA [{USUARIO_ACTUAL['rol']}] ====================")
         print("1. Registrar producto")
         print("2. Consultar/Listar productos")
         print("3. Desactivar producto")
@@ -342,8 +536,13 @@ def menu():
         print("5. Cosechar lote")
         print("6. Movimiento manual de inventario")
         print("7. Registrar venta")
-        print("8. Alertas de stock mínimo")
-        print("9. Reportes del sistema")
+        print("8. Consultar ventas por rango de fechas")
+        print("9. Devolución de venta (Admin/Instructor)")
+        print("10. Exportar inventario a CSV")
+        print("11. Reporte de utilidad estimada (Admin/Instructor)")
+        print("12. Alertas de stock mínimo")
+        print("13. Reportes del sistema")
+        print("14. Reporte de rotación de productos")
         print("0. Salir")
         print("=========================================================")
         
@@ -364,9 +563,19 @@ def menu():
             elif opcion == "7":
                 registrar_venta()
             elif opcion == "8":
-                alertas_stock()
+                consultar_ventas_rango()
             elif opcion == "9":
+                devolver_venta()
+            elif opcion == "10":
+                exportar_inventario_csv()
+            elif opcion == "11":
+                reporte_utilidad_estimada()
+            elif opcion == "12":
+                alertas_stock()
+            elif opcion == "13":
                 generar_reportes()
+            elif opcion == "14":
+                reporte_rotacion_productos()
             elif opcion == "0":
                 print("Saliendo de AgroControl CBA...")
                 break
@@ -377,24 +586,3 @@ def menu():
 
 if __name__ == "__main__":
     menu()
-
-def reporte_rotacion_productos():
-    print("\n--- REPORTE DE ROTACIÓN DE PRODUCTOS ---")
-    ventas = cargar_datos("ventas")
-    productos = cargar_datos("productos")
-    
-    rotacion = {}
-    for v in ventas:
-        for item in v["items"]:
-            code = item["codigo"]
-            rotacion[code] = rotacion.get(code, 0) + item["cantidad"]
-            
-    if not rotacion:
-        print("No hay ventas registradas para calcular rotación.")
-        return
-
-    print("Unidades vendidas por producto:")
-    for code, cant in sorted(rotacion.items(), key=lambda x: x[1], reverse=True):
-        p = next((prod for prod in productos if prod["codigo"] == code), None)
-        nombre = p["nombre"] if p else "Desconocido"
-        print(f"- {nombre} ({code}): {cant} unidades")
