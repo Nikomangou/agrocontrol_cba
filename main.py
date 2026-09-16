@@ -68,3 +68,29 @@ def registrar_producto():
     productos.append(nuevo_producto)
     guardar_datos("productos", productos)
     print(f"Producto '{nombre}' registrado con éxito.")
+
+def listar_productos():
+    productos = cargar_datos("productos")
+    print("\n--- PRODUCTOS REGISTRADOS ---")
+    filtro = input("Buscar por código o parte del nombre (vacío para todos): ").strip().upper()
+    
+    encontrados = False
+    for p in productos:
+        if filtro in p["codigo"] or filtro in p["nombre"].upper():
+            estado = "Activo" if p["activo"] else "Inactivo"
+            print(f"[{p['codigo']}] {p['nombre']} | Cat: {p['categoria']} | Precio: ${p['precio']} | Stock Min: {p['stock_minimo']} | Estado: {estado}")
+            encontrados = True
+    
+    if not encontrados:
+        print("No se encontraron productos.")
+
+def desactivar_producto():
+    codigo = input("Código del producto a desactivar: ").strip().upper()
+    productos = cargar_datos("productos")
+    for p in productos:
+        if p["codigo"] == codigo:
+            p["activo"] = False
+            guardar_datos("productos", productos)
+            print(f"Producto {codigo} desactivado exitosamente (conserva su historial).")
+            return
+    print("Producto no encontrado.")
