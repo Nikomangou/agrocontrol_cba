@@ -15,16 +15,18 @@ AgroControl CBA es una aplicación de consola monolítica desarrollada en Python
 
 
 ## Estructura del Proyecto
-```text
 agrocontrol_cba/
 │   main.py
 │   README.md
 │   .gitignore
+│   reporte_inventario.csv
 └── data/
     ├── productos.json
     ├── lotes.json
     ├── movimientos.json
-    └── ventas.json
+    ├── ventas.json
+    ├── usuarios.json
+    └── backups/
 
 ## Instrucciones de Ejecución
 
@@ -34,6 +36,9 @@ git clone [https://github.com/Nikomangou/agrocontrol_cba.git](https://github.com
 cd agrocontrol_cba
 
 ## Ejecutar la aplicación:
+Admin: Usuario admin | Contraseña admin123
+
+Operador: Usuario operador | Contraseña operador123
 
 python main.py
 
@@ -48,3 +53,12 @@ python main.py
 * **Cosechas Únicas:** Un lote en estado EN_PRODUCCION solo puede cosecharse una vez, generando automáticamente un movimiento de entrada al inventario.
 
 * **Desactivación Lógica:** Los productos inactivos no se eliminan físicamente para preservar el historial de movimientos y ventas.
+
+## Retos de Ampliación Implementados
+
+* **Autenticación y Roles:** Inicio de sesión con gestión de permisos para usuarios con rol `OPERADOR` e `INSTRUCTOR`/`ADMINISTRADOR`.
+* **Respaldos Automáticos:** Copias de seguridad automáticas con marca de tiempo guardadas en `data/backups/` antes de cada modificación.
+* **Margen de Ganancia y Utilidad:** Control de costos unitarios e informe de utilidad bruta estimada sobre las ventas acumuladas.
+* **Filtros por Fecha:** Consulta avanzada de historial de ventas delimitada por rango de fechas (`AAAA-MM-DD`).
+* **Gestión de Devoluciones:** Proceso de reversión de ventas que reintegra automáticamente el stock al inventario como movimiento de entrada.
+* **Exportación de Datos:** Generación del reporte de inventario completo en formato CSV (`reporte_inventario.csv`).
