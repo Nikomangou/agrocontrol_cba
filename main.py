@@ -377,3 +377,24 @@ def menu():
 
 if __name__ == "__main__":
     menu()
+
+def reporte_rotacion_productos():
+    print("\n--- REPORTE DE ROTACIÓN DE PRODUCTOS ---")
+    ventas = cargar_datos("ventas")
+    productos = cargar_datos("productos")
+    
+    rotacion = {}
+    for v in ventas:
+        for item in v["items"]:
+            code = item["codigo"]
+            rotacion[code] = rotacion.get(code, 0) + item["cantidad"]
+            
+    if not rotacion:
+        print("No hay ventas registradas para calcular rotación.")
+        return
+
+    print("Unidades vendidas por producto:")
+    for code, cant in sorted(rotacion.items(), key=lambda x: x[1], reverse=True):
+        p = next((prod for prod in productos if prod["codigo"] == code), None)
+        nombre = p["nombre"] if p else "Desconocido"
+        print(f"- {nombre} ({code}): {cant} unidades")
