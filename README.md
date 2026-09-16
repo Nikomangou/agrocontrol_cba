@@ -36,11 +36,12 @@ git clone [https://github.com/Nikomangou/agrocontrol_cba.git](https://github.com
 cd agrocontrol_cba
 
 ## Ejecutar la aplicación:
+
+python main.py
+
 Admin: Usuario admin | Contraseña admin123
 
 Operador: Usuario operador | Contraseña operador123
-
-python main.py
 
 ## Reglas de Negocio Principales
 
