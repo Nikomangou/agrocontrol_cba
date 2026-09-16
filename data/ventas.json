@@ -1,0 +1,36 @@
+[
+    {
+        "id": "V0001",
+        "fecha": "2026-09-16 14:24",
+        "estado": "COMPLETADA",
+        "items": [
+            {
+                "codigo": "P002",
+                "cantidad": 4,
+                "costo_unitario": 2000.0,
+                "precio_unitario": 3500.0
+            }
+        ],
+        "total": 14000.0
+    },
+    {
+        "id": "V0002",
+        "fecha": "2026-09-16 14:32",
+        "estado": "COMPLETADA",
+        "items": [
+            {
+                "codigo": "P002",
+                "cantidad": 5,
+                "costo_unitario": 2000.0,
+                "precio_unitario": 3500.0
+            },
+            {
+                "codigo": "P003",
+                "cantidad": 20,
+                "costo_unitario": 1000.0,
+                "precio_unitario": 2500.0
+            }
+        ],
+        "total": 67500.0
+    }
+]

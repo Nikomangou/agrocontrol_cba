@@ -1,0 +1,18 @@
+[
+    {
+        "id_lote": "L001",
+        "producto_codigo": "P001",
+        "fecha_siembra": "2020-02-14",
+        "area_m2": 200.0,
+        "cantidad_producida": 20.0,
+        "estado": "COSECHADO"
+    },
+    {
+        "id_lote": "L002",
+        "producto_codigo": "P002",
+        "fecha_siembra": "2026-05-04",
+        "area_m2": 300.0,
+        "cantidad_producida": 50.0,
+        "estado": "COSECHADO"
+    }
+]

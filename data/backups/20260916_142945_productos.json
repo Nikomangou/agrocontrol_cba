@@ -1,0 +1,32 @@
+[
+    {
+        "codigo": "P001",
+        "nombre": "lechuga",
+        "categoria": "frutas y verduras",
+        "unidad": "kilo",
+        "costo": 3500.0,
+        "precio": 4500.0,
+        "stock_minimo": 10,
+        "activo": true
+    },
+    {
+        "codigo": "P002",
+        "nombre": "Fresa",
+        "categoria": "frutas y verduras",
+        "unidad": "libra",
+        "costo": 2000.0,
+        "precio": 3500.0,
+        "stock_minimo": 50,
+        "activo": true
+    },
+    {
+        "codigo": "P003",
+        "nombre": "mazorca",
+        "categoria": "frutas y verduras",
+        "unidad": "unidad",
+        "costo": 1000.0,
+        "precio": 2500.0,
+        "stock_minimo": 5,
+        "activo": true
+    }
+]

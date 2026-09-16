@@ -1,0 +1,12 @@
+[
+    {
+        "codigo": "P001",
+        "nombre": "lechuga",
+        "categoria": "frutas y verduras",
+        "unidad": "kilo",
+        "costo": 3500.0,
+        "precio": 4500.0,
+        "stock_minimo": 10,
+        "activo": true
+    }
+]

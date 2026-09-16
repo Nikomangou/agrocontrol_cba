@@ -1,0 +1,58 @@
+[
+    {
+        "id": "M0001",
+        "producto_codigo": "P001",
+        "tipo": "ENTRADA",
+        "cantidad": 20.0,
+        "motivo": "Cosecha lote L001",
+        "fecha": "2026-09-16 14:14"
+    },
+    {
+        "id": "M0002",
+        "producto_codigo": "P001",
+        "tipo": "SALIDA",
+        "cantidad": 20.0,
+        "motivo": "VENTA",
+        "fecha": "2026-09-16 14:15"
+    },
+    {
+        "id": "M0003",
+        "producto_codigo": "P002",
+        "tipo": "ENTRADA",
+        "cantidad": 50.0,
+        "motivo": "Cosecha lote L002",
+        "fecha": "2026-09-16 14:21"
+    },
+    {
+        "id": "M0004",
+        "producto_codigo": "P002",
+        "tipo": "SALIDA",
+        "cantidad": 4,
+        "motivo": "Venta V0001",
+        "fecha": "2026-09-16 14:24"
+    },
+    {
+        "id": "M0005",
+        "producto_codigo": "P003",
+        "tipo": "ENTRADA",
+        "cantidad": 40.0,
+        "motivo": "Cosecha lote L003",
+        "fecha": "2026-09-16 14:29"
+    },
+    {
+        "id": "M0006",
+        "producto_codigo": "P002",
+        "tipo": "SALIDA",
+        "cantidad": 5,
+        "motivo": "Venta V0002",
+        "fecha": "2026-09-16 14:32"
+    },
+    {
+        "id": "M0007",
+        "producto_codigo": "P003",
+        "tipo": "SALIDA",
+        "cantidad": 20,
+        "motivo": "Venta V0002",
+        "fecha": "2026-09-16 14:32"
+    }
+]

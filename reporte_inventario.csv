@@ -1,0 +1,4 @@
+Codigo,Nombre,Categoria,Unidad,Costo,Precio,Stock_Actual,Valor_Inventario_Venta
+P001,lechuga,frutas y verduras,kilo,3500.0,4500.0,0.0,0.0
+P002,Fresa,frutas y verduras,libra,2000.0,3500.0,41.0,143500.0
+P003,mazorca,frutas y verduras,unidad,1000.0,2500.0,20.0,50000.0

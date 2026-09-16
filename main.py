@@ -16,9 +16,6 @@ ARCHIVOS = {
 
 USUARIO_ACTUAL = None
 
-# ---------------------------------------------------------
-# PERSISTENCIA & RESPALDOS
-# ---------------------------------------------------------
 def inicializar_almacenamiento():
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
@@ -30,8 +27,12 @@ def inicializar_almacenamiento():
             with open(ruta, "w", encoding="utf-8") as f:
                 json.dump([], f, ensure_ascii=False, indent=4)
 
-    # Crear usuarios por defecto si no existen
-    usuarios = cargar_datos("usuarios", crear_backup_previo=False)
+    try:
+        with open(ARCHIVOS["usuarios"], "r", encoding="utf-8") as f:
+            usuarios = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        usuarios = []
+
     if not usuarios:
         default_users = [
             {"usuario": "admin", "clave": "admin123", "rol": "ADMINISTRADOR"},
@@ -47,8 +48,7 @@ def crear_copia_seguridad():
             respaldo_path = os.path.join(BACKUP_DIR, f"{timestamp}_{nombre_archivo}")
             shutil.copy(ruta, respaldo_path)
 
-def cargar_datos(llave, crear_backup_previo=False):
-    inicializar_almacenamiento()
+def cargar_datos(llave):
     try:
         with open(ARCHIVOS[llave], "r", encoding="utf-8") as f:
             return json.load(f)
@@ -61,13 +61,10 @@ def guardar_datos(llave, datos, realizar_backup=True):
     with open(ARCHIVOS[llave], "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=4)
 
-# ---------------------------------------------------------
-# AUTENTICACIÓN
-# ---------------------------------------------------------
 def iniciar_sesion():
     global USUARIO_ACTUAL
     print("\n==================== INICIO DE SESIÓN ====================")
-    usuarios = cargar_datos("usuarios", crear_backup_previo=False)
+    usuarios = cargar_datos("usuarios")
     intentos = 0
     while intentos < 3:
         usr = input("Usuario: ").strip()
@@ -88,9 +85,6 @@ def verificar_permisos(roles_permitidos):
     print(f"Error de acceso: Esta función requiere rol {', '.join(roles_permitidos)}.")
     return False
 
-# ---------------------------------------------------------
-# FUNCIONES PRINCIPALES
-# ---------------------------------------------------------
 def registrar_producto():
     print("\n--- REGISTRAR PRODUCTO ---")
     codigo = input("Código del producto: ").strip().upper()
