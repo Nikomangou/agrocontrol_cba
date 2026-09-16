@@ -294,4 +294,15 @@ def registrar_venta():
     guardar_datos("ventas", ventas)
     print(f"Venta {id_venta} registrada con éxito. Total: ${total_venta}")
 
-    
+def alertas_stock():
+    print("\n--- ALERTAS DE STOCK MÍNIMO ---")
+    productos = cargar_datos("productos")
+    alertas = False
+    for p in productos:
+        if p["activo"]:
+            stock = calcular_stock(p["codigo"])
+            if stock <= p["stock_minimo"]:
+                print(f"⚠️ ALERTA: [{p['codigo']}] {p['nombre']} -> Stock actual: {stock} | Mínimo: {p['stock_minimo']}")
+                alertas = True
+    if not alertas:
+        print("Todos los productos activos superan el stock mínimo.")
