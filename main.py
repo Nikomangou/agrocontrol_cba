@@ -226,3 +226,72 @@ def registrar_movimiento_manual():
     })
     guardar_datos("movimientos", movimientos)
     print(f"Movimiento {id_mov} registrado correctamente.")
+
+def registrar_venta():
+    print("\n--- REGISTRAR VENTA ---")
+    productos = cargar_datos("productos")
+    items_venta = []
+    
+    while True:
+        codigo = input("Código de producto a vender (o 'FIN' para terminar): ").strip().upper()
+        if codigo == "FIN":
+            break
+        
+        prod = next((p for p in productos if p["codigo"] == codigo and p["activo"]), None)
+        if not prod:
+            print("Producto no encontrado o inactivo.")
+            continue
+        
+        stock_disp = calcular_stock(codigo)
+        print(f"Producto: {prod['nombre']} | Precio: ${prod['precio']} | Stock Disponible: {stock_disp}")
+        
+        try:
+            cant = int(input("Cantidad a vender: "))
+            if cant <= 0:
+                print("La cantidad debe ser mayor a 0.")
+                continue
+            if cant > stock_disp:
+                print("Error: No hay suficiente stock para cubrir esta cantidad.")
+                continue
+        except ValueError:
+            print("Cantidad inválida.")
+            continue
+
+        items_venta.append({
+            "codigo": codigo,
+            "cantidad": cant,
+            "precio_unitario": prod["precio"]
+        })
+
+    if not items_venta:
+        print("Venta cancelada. No se agregaron productos.")
+        return
+
+    ventas = cargar_datos("ventas")
+    id_venta = f"V{len(ventas)+1:04d}"
+    total_venta = sum(item["cantidad"] * item["precio_unitario"] for item in items_venta)
+
+    movimientos = cargar_datos("movimientos")
+    for item in items_venta:
+        id_mov = f"M{len(movimientos)+1:04d}"
+        movimientos.append({
+            "id": id_mov,
+            "producto_codigo": item["codigo"],
+            "tipo": "SALIDA",
+            "cantidad": item["cantidad"],
+            "motivo": f"Venta {id_venta}",
+            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
+
+    ventas.append({
+        "id": id_venta,
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "items": items_venta,
+        "total": total_venta
+    })
+
+    guardar_datos("movimientos", movimientos)
+    guardar_datos("ventas", ventas)
+    print(f"Venta {id_venta} registrada con éxito. Total: ${total_venta}")
+
+    
