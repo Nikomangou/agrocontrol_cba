@@ -302,7 +302,33 @@ def alertas_stock():
         if p["activo"]:
             stock = calcular_stock(p["codigo"])
             if stock <= p["stock_minimo"]:
-                print(f"⚠️ ALERTA: [{p['codigo']}] {p['nombre']} -> Stock actual: {stock} | Mínimo: {p['stock_minimo']}")
+                print(f"ALERTA: [{p['codigo']}] {p['nombre']} -> Stock actual: {stock} | Mínimo: {p['stock_minimo']}")
                 alertas = True
     if not alertas:
         print("Todos los productos activos superan el stock mínimo.")
+
+def generar_reportes():
+    print("\n--- REPORTES DEL SISTEMA ---")
+    productos = cargar_datos("productos")
+    ventas = cargar_datos("ventas")
+
+    valor_total_inv = sum(calcular_stock(p["codigo"]) * p["precio"] for p in productos if p["activo"])
+    print(f"1. Valor total del inventario (precio de venta): ${valor_total_inv:,.2f}")
+
+    total_ingresos = sum(v["total"] for v in ventas)
+    unidades_vendidas = sum(item["cantidad"] for v in ventas for item in v["items"])
+    print(f"2. Total Ventas: {len(ventas)} | Unidades Vendidas: {unidades_vendidas} | Ingresos Acumulados: ${total_ingresos:,.2f}")
+
+    conteo_productos = {}
+    for v in ventas:
+        for item in v["items"]:
+            c = item["codigo"]
+            conteo_productos[c] = conteo_productos.get(c, 0) + item["cantidad"]
+    
+    ranking = sorted(conteo_productos.items(), key=lambda x: x[1], reverse=True)[:3]
+    print("\n3. Top 3 productos más vendidos:")
+    for codigo, cant in ranking:
+        p = next((prod for prod in productos if prod["codigo"] == codigo), None)
+        nombre = p["nombre"] if p else "Desconocido"
+        print(f"   - {nombre} ({codigo}): {cant} unidades")
+
