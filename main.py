@@ -169,4 +169,60 @@ def cosechar_lote():
     movimientos.append(nuevo_mov)
     guardar_datos("movimientos", movimientos)
     print(f"Lote {id_lote} cosechado. Entrada de inventario {id_mov} generada.")
-    
+
+def calcular_stock(codigo_producto):
+    movimientos = cargar_datos("movimientos")
+    stock = 0
+    for m in movimientos:
+        if m["producto_codigo"] == codigo_producto:
+            if m["tipo"] == "ENTRADA":
+                stock += m["cantidad"]
+            elif m["tipo"] == "SALIDA":
+                stock -= m["cantidad"]
+    return stock
+
+def registrar_movimiento_manual():
+    print("\n--- MOVIMIENTO MANUAL DE INVENTARIO ---")
+    codigo = input("Código del producto: ").strip().upper()
+    productos = cargar_datos("productos")
+    if not any(p["codigo"] == codigo for p in productos):
+        print("Error: Producto no existe.")
+        return
+
+    tipo = input("Tipo (ENTRADA/SALIDA): ").strip().upper()
+    if tipo not in ["ENTRADA", "SALIDA"]:
+        print("Tipo de movimiento inválido.")
+        return
+
+    try:
+        cantidad = float(input("Cantidad: "))
+        if cantidad <= 0:
+            print("La cantidad debe ser mayor a 0.")
+            return
+    except ValueError:
+        print("Cantidad inválida.")
+        return
+
+    if tipo == "SALIDA":
+        stock_actual = calcular_stock(codigo)
+        if cantidad > stock_actual:
+            print(f"Error (PF005): Stock insuficiente. Stock actual: {stock_actual}")
+            return
+
+    motivo = input("Motivo (obligatorio): ").strip()
+    if not motivo:
+        print("El motivo es obligatorio.")
+        return
+
+    movimientos = cargar_datos("movimientos")
+    id_mov = f"M{len(movimientos)+1:04d}"
+    movimientos.append({
+        "id": id_mov,
+        "producto_codigo": codigo,
+        "tipo": tipo,
+        "cantidad": cantidad,
+        "motivo": motivo,
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")
+    })
+    guardar_datos("movimientos", movimientos)
+    print(f"Movimiento {id_mov} registrado correctamente.")
