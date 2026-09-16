@@ -94,3 +94,38 @@ def desactivar_producto():
             print(f"Producto {codigo} desactivado exitosamente (conserva su historial).")
             return
     print("Producto no encontrado.")
+
+def registrar_lote():
+    print("\n--- REGISTRAR LOTE PRODUCTIVO ---")
+    id_lote = input("ID de lote (ej. L001): ").strip().upper()
+    lotes = cargar_datos("lotes")
+    if any(l["id_lote"] == id_lote for l in lotes):
+        print("Error: El ID del lote ya existe.")
+        return
+
+    prod_codigo = input("Código del producto asociado: ").strip().upper()
+    productos = cargar_datos("productos")
+    producto = next((p for p in productos if p["codigo"] == prod_codigo and p["activo"]), None)
+    
+    if not producto:
+        print("Error: El producto no existe o está inactivo.")
+        return
+
+    fecha_siembra = input("Fecha de siembra (AAAA-MM-DD): ").strip()
+    try:
+        area_m2 = float(input("Área en m2: "))
+    except ValueError:
+        print("Error: El área debe ser un valor numérico.")
+        return
+
+    nuevo_lote = {
+        "id_lote": id_lote,
+        "producto_codigo": prod_codigo,
+        "fecha_siembra": fecha_siembra,
+        "area_m2": area_m2,
+        "cantidad_producida": 0,
+        "estado": "EN_PRODUCCION"
+    }
+    lotes.append(nuevo_lote)
+    guardar_datos("lotes", lotes)
+    print(f"Lote {id_lote} registrado en estado EN_PRODUCCION.")
