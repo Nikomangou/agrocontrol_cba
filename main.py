@@ -129,3 +129,44 @@ def registrar_lote():
     lotes.append(nuevo_lote)
     guardar_datos("lotes", lotes)
     print(f"Lote {id_lote} registrado en estado EN_PRODUCCION.")
+
+def cosechar_lote():
+    print("\n--- COSECHAR LOTE ---")
+    id_lote = input("ID del lote a cosechar: ").strip().upper()
+    lotes = cargar_datos("lotes")
+    lote = next((l for l in lotes if l["id_lote"] == id_lote), None)
+
+    if not lote:
+        print("Error (PF003): El lote no existe.")
+        return
+    if lote["estado"] != "EN_PRODUCCION":
+        print("Error (PF004): El lote ya fue cosechado o cancelado.")
+        return
+
+    try:
+        cantidad = float(input("Cantidad producida cosechada: "))
+        if cantidad <= 0:
+            print("Error: La cantidad debe ser mayor a 0.")
+            return
+    except ValueError:
+        print("Error: Ingrese un valor numérico.")
+        return
+
+    lote["cantidad_producida"] = cantidad
+    lote["estado"] = "COSECHADO"
+    guardar_datos("lotes", lotes)
+
+    movimientos = cargar_datos("movimientos")
+    id_mov = f"M{len(movimientos)+1:04d}"
+    nuevo_mov = {
+        "id": id_mov,
+        "producto_codigo": lote["producto_codigo"],
+        "tipo": "ENTRADA",
+        "cantidad": cantidad,
+        "motivo": f"Cosecha lote {id_lote}",
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")
+    }
+    movimientos.append(nuevo_mov)
+    guardar_datos("movimientos", movimientos)
+    print(f"Lote {id_lote} cosechado. Entrada de inventario {id_mov} generada.")
+    
